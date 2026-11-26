@@ -71,8 +71,8 @@
     clearInterval(heroTimer);
     const { path, q } = parse();
     const key = path.split('/')[1] || 'home';
-    $$('#gnav a').forEach(a => a.classList.toggle('on', a.dataset.k === key));
-    $$('#tabbar a').forEach(a => a.classList.toggle('on', a.dataset.k === key));
+    clearInterval(tunnelTimer); cancelAnimationFrame(railRAF);
+    paintDock(key);
     let m;
     if (path === '/' || path === '') home();
     else if (path === '/supersearch') superSearch(q);
@@ -86,6 +86,7 @@
     else if (path === '/favorites') favorites();
     else placeholder(path);
     window.scrollTo(0, 0);
+    requestAnimationFrame(reveal);
     document.title = ({ supersearch: '슈퍼검색', market: '중고장터', concierge: '대리구매', magazine: '매거진', retail: '리테일' }[key] ? ({ supersearch: '슈퍼검색', market: '중고장터', concierge: '대리구매', magazine: '매거진', retail: '리테일' }[key] + ' | ') : '') + 'Watch HUB — 한국·일본 중고 시계 통합 검색';
   }
   window.addEventListener('hashchange', route);
@@ -96,55 +97,196 @@
     <div class="b">${esc(brandKo(x.brand))}</div><div class="n">${esc(x.ko)}</div><div class="r">Ref. ${esc(x.ref.split('-')[0])}</div><div class="p">₩${won(x.krw)}</div></a>`;
   document.addEventListener('click', (e) => { const h = e.target.closest('[data-heart]'); if (!h) return; e.preventDefault(); fav.toggle(h.dataset.heart); h.classList.toggle('on', fav.has(h.dataset.heart)); toast(fav.has(h.dataset.heart) ? '즐겨찾기에 담았어요' : '즐겨찾기에서 뺐어요'); });
 
-  // ---------- home ----------
+  // ---------- home : virtual boutique ----------
+  let railRAF = null, tunnelTimer = null;
   function home() {
-    const slides = [...HERO, HERO[0]];
+    const brandsOnRail = ['all', 'rolex', 'patek', 'ap', 'cartier', 'omega', 'tudor', 'vc', 'hublot', 'rm'];
+    const platTotals = PLATFORMS.map(p => Math.round(2400 * p.w * (0.8 + rng('pt' + p.id)() * 0.4)));
+    const tunnelItems = [...todays, ...MARKET.filter(x => ['5811/1G-001', '15510ST.OO.1320ST.06', 'WSSA0018', '126710BLNR-0002', 'M79030N-0001', '4500V/110A-B128', '511.NX.1171.RX', '310.30.42.50.01.001'].includes(x.ref))];
+    const shelfBrands = RAIL.filter(r => !['all', 'etc'].includes(r[0])).slice(0, 16);
+    const words = '좋은 시계는 기다리게 만들죠. 그래서 우리가 대신 찾고, 검수하고, 안전하게 손목까지 옮겨드려요.'.split(' ');
+    const retailPicks = ['5227G-010', '126610LN-0001', '15510ST.OO.1320ST.06', 'WGTA0011', '310.30.42.50.01.001'].map(modelByRef).filter(Boolean);
+    const [lead, ...side] = ARTICLES;
     app.innerHTML = `
-      <section class="hero" aria-label="추천 컬렉션"><div class="carousel" id="car">
-        <div class="slides" id="slides">${slides.map((s, i) => { const m = modelByRef(s.ref); return `<div class="slide ${s.dark ? 'dark' : ''}" aria-hidden="${i ? 'true' : 'false'}"><div class="bg" style="background:${s.bg}"></div>
-          <div class="ring" style="width:140%;height:90%;left:-60%;top:-20%;border-color:${s.rings}55"></div><div class="ring" style="width:120%;height:120%;left:40%;top:30%;border-color:${s.rings}44"></div>
-          <div class="w">${m ? watchImg(m, { eager: i < 2 }) : ''}</div><div class="copy"><h2>${esc(s.k)}</h2><p>${esc(s.d)}</p></div></div>`; }).join('')}</div>
-        <div class="ctrl"><button class="pp" id="pp" aria-label="자동 재생 일시정지">${svg(IC.pause, 'sm')}</button><div class="dots" id="dots">${HERO.map((_, i) => `<button aria-label="${i + 1} / ${HERO.length}"></button>`).join('')}</div><div class="cnt" id="cnt">1 <span>/ ${HERO.length}</span></div></div>
-      </div></section>
-      <section class="search-hero"><div class="inner"><div class="eyebrow">나의 다음 시계, Watch HUB</div><h1>찾던 시계를,<br>한눈에 비교하세요.</h1><p class="lead">여러 플랫폼의 시계 매물을 한 번에 검색하세요.</p>
-        <label for="hq">슈퍼검색</label><form class="sbox" role="search" id="hform"><input id="hq" placeholder="브랜드, 모델, 레퍼런스" autocomplete="off"><button aria-label="슈퍼검색">${svg(IC.search)}</button></form></div></section>
-      <section class="sec"><div class="wrap">
-        <div class="sec-h"><div><h2>브랜드별 중고 시계</h2><p>원하는 브랜드의 중고 매물을 둘러보세요.</p></div></div>
-        <div class="rail" id="rail">${RAIL.map(r => `<a class="bchip" href="#/market${r[0] === 'all' ? '' : '?brand=' + r[0]}" title="${esc(r[1])}">${logoTile(r[0])}<span>${esc(r[1])}</span></a>`).join('')}</div>
-        <div class="rail-bar"><i id="railI"></i></div>
-        <nav class="svc" aria-label="서비스">${[['supersearch', '슈퍼검색', IC.search], ['market', '중고장터', IC.bag], ['concierge', '대리구매', IC.hand], ['magazine', '매거진', IC.book], ['retail', '리테일', IC.receipt]].map(([k, l, p]) => `<a href="#/${k}"><span class="ib">${svg(p)}</span><span>${l}</span></a>`).join('')}</nav>
-      </div></section>
-      <div class="divider"></div>
-      <section class="sec"><div class="wrap"><div class="sec-h"><div><h2>중고장터</h2><p>오늘 장터에 등록된 신규 상품입니다</p></div><a class="more" href="#/market">더보기 ${svg(IC.arrow, 'sm')}</a></div>
-        <div class="pgrid">${todays.map(pcard).join('')}</div></div></section>
-      <section class="concierge"><div class="wrap"><div><div class="eb">WATCH HUB CONCIERGE</div><h2>마음에 드는 시계,<br>안심하고 만날 수 있도록.</h2><a class="btn-w" href="#/concierge">대리구매 ${svg(IC.arrow, 'sm')}</a></div>
-        <div class="art"><div class="w">${watchImg(modelByRef('5990/1R-001'))}</div></div></div></section>
-      <section class="sec"><div class="wrap"><div class="sec-h"><div><h2>매거진</h2></div><a class="more" href="#/magazine">더보기 ${svg(IC.arrow, 'sm')}</a></div>
-        <div class="mgrid">${ARTICLES.slice(0, 2).map(magCard).join('')}</div></div></section>
-      <div class="divider"></div>
-      <section class="sec"><div class="wrap"><div class="sec-h"><div><h2>리테일</h2><p>브랜드부터 레퍼런스까지, 정가를 찾아보세요.</p></div><a class="more" href="#/retail">더보기 ${svg(IC.arrow, 'sm')}</a></div>
-        <div class="rgrid"><a class="rfeat" href="#/retail/patek"><div class="w">${watchImg(modelByRef('5227G-010'))}</div><div><div class="b">파텍 필립</div><div class="n">칼라트라바</div><span class="go">컬렉션 둘러보기 ${svg(IC.arrow, 'sm')}</span></div></a>
-          <div class="rlist">${['omega', 'rolex', 'vc'].map(id => `<a href="#/retail/${id}">${logoTile(id)}<div><b>${brandKo(id)}</b><small>컬렉션 둘러보기</small></div>${svg(IC.chevR)}</a>`).join('')}</div></div></div></section>`;
+      <section class="boutique">
+        <div class="b-head">
+          <div class="b-eb">Virtual Watch Boutique · Seoul / Tokyo / Hong Kong</div>
+          <div class="wordmark-wrap"><h1 class="wordmark"><span>WATCH</span> <span>HUB</span></h1></div>
+          <div class="b-sub">흩어진 매물을, 하나의 레일 위에서.</div>
+          <div class="pills" id="pills">${brandsOnRail.map(b => `<button data-b="${b}" class="${b === 'all' ? 'on' : ''}">${b === 'all' ? '전체' : esc(brandKo(b))}</button>`).join('')}</div>
+        </div>
+        <div class="rail-zone" id="railZone" aria-label="시계 레일 — 드래그해서 넘겨보세요">
+          <div class="rod"></div>
+          <div class="track" id="track"></div>
+          <div class="b-count" id="bCount"></div>
+          <div class="rail-hint">DRAG · SCROLL ← →</div>
+        </div>
+      </section>
 
-    // carousel
-    const N = HERO.length; let idx = 0, playing = true;
-    const track = $('#slides'), dots = $$('#dots button'), cnt = $('#cnt');
-    const paint = (anim = true) => { track.style.transition = anim ? '' : 'none'; track.style.transform = `translateX(-${idx * 100}%)`; const real = idx % N; dots.forEach((d, i) => d.classList.toggle('on', i === real)); cnt.innerHTML = `${real + 1} <span>/ ${N}</span>`; $$('.slide', track).forEach((s, i) => s.setAttribute('aria-hidden', i === idx ? 'false' : 'true')); };
-    const next = () => { idx++; paint(); if (idx === N) setTimeout(() => { idx = 0; paint(false); }, 620); };
-    const start = () => { clearInterval(heroTimer); heroTimer = setInterval(next, 4500); };
-    dots.forEach((d, i) => d.onclick = () => { idx = i; paint(); if (playing) start(); });
-    $('#pp').onclick = () => { playing = !playing; $('#pp').innerHTML = svg(playing ? IC.pause : IC.play, 'sm'); $('#pp').setAttribute('aria-label', playing ? '자동 재생 일시정지' : '자동 재생'); playing ? start() : clearInterval(heroTimer); };
-    let sx = null; const car = $('#car');
-    car.addEventListener('pointerdown', e => { sx = e.clientX; });
-    car.addEventListener('pointerup', e => { if (sx == null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 40) { idx = (idx + (dx < 0 ? 1 : N - 1)) % N; paint(); if (playing) start(); } });
-    paint(false); start();
-    // rail progress
-    const rail = $('#rail'), bar = $('#railI');
-    const rp = () => { const max = rail.scrollWidth - rail.clientWidth; const w = rail.clientWidth / rail.scrollWidth; bar.style.width = (w * 100) + '%'; bar.style.left = (max > 0 ? rail.scrollLeft / max * (1 - w) * 100 : 0) + '%'; };
-    rail.addEventListener('scroll', rp); rp(); setTimeout(rp, 50);
-    rail.addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { rail.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+      <section class="qband"><div class="wrap">
+        <div class="eb rv">Super Search</div>
+        <div class="q-big rv rv-d1">어디에 있든,<br><em>한 번에</em> 찾아요.</div>
+        <form class="q-form rv rv-d2" id="hform" role="search"><input id="hq" autocomplete="off" aria-label="슈퍼검색"><button class="q-go" aria-label="검색">${svg(IC.arrow)}</button></form>
+        <div class="q-chips rv rv-d3">${['데이토나', '서브마리너', '노틸러스', '로열 오크', '산토스', '126610', '스피드마스터'].map(t => `<a href="#/supersearch?q=${encodeURIComponent(t)}">${t}</a>`).join('')}</div>
+        <div class="plat-strip rv">${PLATFORMS.map((p, i) => `<div><b data-count="${platTotals[i]}">0</b><small>${p.name} · 오늘 수집</small></div>`).join('')}</div>
+      </div></section>
+
+      <section class="sec tunnel-sec"><div class="wrap">
+        <div class="sec-h"><div><div class="eb rv">New arrivals</div><h2 class="rv rv-d1">오늘 들어온 <em>시계</em></h2></div><a class="more rv" href="#/market">장터 전체 ${svg(IC.arrow, 'sm')}</a></div>
+        <div class="tunnel" id="tunnel"><div class="tunnel-track" id="ttrack">${tunnelItems.map((x, i) => `<a class="tcard" data-i="${i}" href="#/market/${x.mid}"><div class="ph">${watchImg(x)}</div><div class="meta"><div><b>${esc(x.ko)}</b><small>${esc(brandKo(x.brand))} · Ref. ${esc(x.ref.split('-')[0])}</small></div><span class="pr">₩${won(x.krw)}</span></div></a>`).join('')}</div></div>
+        <div class="t-ctrl"><button id="tPrev" aria-label="이전">${svg('<path d="M15 6l-6 6 6 6"/>')}</button><button id="tNext" aria-label="다음">${svg(IC.chevR)}</button></div>
+      </div></section>
+
+      <section class="sec"><div class="wrap">
+        <div class="sec-h"><div><div class="eb rv">Brand shelf</div><h2 class="rv rv-d1">브랜드 <em>선반</em></h2></div><p class="rv">선반에서 브랜드를 꺼내면 그 브랜드의 중고 매물만 모아 보여드려요.</p></div>
+        <div class="shelf rv">${[shelfBrands.slice(0, 8), shelfBrands.slice(8, 16)].map((row, ri) => `<div class="shelf-row ${ri ? 'second' : ''}">${row.map(r => `<a class="bbox" href="#/market?brand=${r[0]}"><div class="cube ${r[3] ? '' : 'sans'}"><span>${esc(r[2]).replace('\n', '<br>')}<small>${esc(r[1])}</small></span></div></a>`).join('')}</div><div class="shelf-board"></div>`).join('')}</div>
+      </div></section>
+
+      <section class="story" id="story"><div class="wrap" style="position:relative">
+        <div class="eb" style="color:#8c8a85">Watch HUB Concierge</div>
+        <p class="big" id="storyBig">${words.map(w => `<span class="w">${/대신|안전하게/.test(w) ? `<em>${esc(w)}</em>` : esc(w)}</span>`).join(' ')}</p>
+        <div class="steps-line">${[['01', '신청', '모델과 예산을 알려주세요.'], ['02', '탐색', '딜러 네트워크에서 매물을 찾아 제안해요.'], ['03', '검수', '정품·상태·구성품을 확인해요.'], ['04', '배송', '안전결제 후 보험 배송.']].map(s => `<div class="rv"><b>STEP ${s[0]}</b><strong>${s[1]}</strong><p>${s[2]}</p></div>`).join('')}</div>
+        <a class="btn-brass" href="#/concierge">대리구매 신청 ${svg(IC.arrow, 'sm')}</a>
+        <div class="story-img">${watchImg(modelByRef('5990/1R-001'))}</div>
+      </div></section>
+
+      <section class="sec"><div class="wrap">
+        <div class="sec-h"><div><div class="eb rv">Magazine</div><h2 class="rv rv-d1">읽고 나면 <em>달리</em> 보여요</h2></div><a class="more rv" href="#/magazine">매거진 ${svg(IC.arrow, 'sm')}</a></div>
+        <div class="edit"><div class="lead-card rv">${magCard(lead)}</div><div class="edit-side">${side.slice(0, 3).map((a, i) => `<div class="rv rv-d${i + 1}">${magCard(a)}</div>`).join('')}</div></div>
+      </div></section>
+
+      <section class="sec" style="padding-top:40px"><div class="wrap">
+        <div class="sec-h"><div><div class="eb rv">Retail price tags</div><h2 class="rv rv-d1">정가는 <em>태그</em>에</h2></div><a class="more rv" href="#/retail">리테일 ${svg(IC.arrow, 'sm')}</a></div>
+        <div class="tags">${retailPicks.map((m, i) => `<a class="ptag rv rv-d${i % 3}" href="#/retail/${m.brand}"><div class="th">${watchImg(m)}</div><b>${esc(m.family)}</b><small>${esc(brandKo(m.brand))} · ${esc(m.ref)}</small><span class="pr">₩${won(Math.round(m.retail * KRW * 1.07 / 10000) * 10000)}</span></a>`).join('')}</div>
+      </div></section>`;
+
+    initRail(brandsOnRail);
+    initTunnel(tunnelItems.length);
+    initStory();
+    typePlaceholder($('#hq'), ['데이토나 126500LN', '파텍 노틸러스', '로열 오크 15510', '까르띠에 산토스', '튜더 블랙베이']);
     $('#hform').onsubmit = (e) => { e.preventDefault(); const v = $('#hq').value.trim(); location.hash = '#/supersearch' + (v ? '?q=' + encodeURIComponent(v) : ''); };
   }
+
+  function initRail(brands) {
+    const zone = $('#railZone'), track = $('#track'), count = $('#bCount');
+    const SP = innerWidth < 760 ? 180 : 240;
+    let items = [], offset = 0, vel = -0.35, dragging = false, lastX = 0, target = null, focusIdx = -1, swing = 0;
+    const build = (brand) => {
+      let list = MARKET.filter(x => brand === 'all' || x.brand === brand);
+      const seen = new Set(); list = list.filter(x => { const k = (window.WH_PHOTOS.byRef[x.ref] || x.ref); if (brand === 'all' && seen.has(k)) return false; seen.add(k); return true; }).slice(0, 18);
+      while (list.length < 8) list = list.concat(list);
+      items = list;
+      track.innerHTML = list.map((x, i) => `<div class="hang" data-i="${i}"><span class="hook"></span><span class="strings"></span><div class="card">${watchImg(x, { eager: i < 8 })}</div><div class="tag"><span class="tag-in"><small>${esc(brandKo(x.brand))}</small><b>${esc(x.ko)}</b><span class="pr">₩${won(x.krw)}</span></span></div></div>`).join('');
+      track.style.opacity = 0; requestAnimationFrame(() => { track.style.transition = 'opacity .5s'; track.style.opacity = 1; });
+      offset = 0; focusIdx = -1;
+    };
+    build('all');
+    const frame = () => {
+      if (!document.body.contains(zone)) return cancelAnimationFrame(railRAF);
+      const W = zone.clientWidth, total = items.length * SP, cx = W / 2;
+      if (target != null) { const d = target - offset; offset += d * 0.12; vel = 0; if (Math.abs(d) < 0.5) target = null; }
+      else if (!dragging) { vel += (-0.35 - vel) * 0.02; offset += vel; }
+      swing += (vel * 2.2 - swing) * 0.08;
+      const els = track.children; let best = 1e9, bi = 0;
+      for (let i = 0; i < els.length; i++) {
+        let x = ((i * SP + offset) % total + total) % total; if (x > total - SP * 1.5) x -= total;
+        const cardW = els[i].offsetWidth; const center = x + cardW / 2 - (W > total ? 0 : 0);
+        const dist = Math.abs(center - cx); if (dist < best) { best = dist; bi = i; }
+        const s = 1 + 0.34 * Math.max(0, 1 - dist / (SP * 1.4));
+        const rot = Math.max(-9, Math.min(9, -swing)) * (1 - Math.min(1, dist / 900) * .5);
+        els[i].style.transform = `translateX(${x}px) scale(${s.toFixed(3)}) rotate(${rot.toFixed(2)}deg)`;
+        els[i].style.zIndex = String(100 - Math.round(dist / 10));
+        els[i].style.filter = dist > SP * 2.2 ? 'saturate(.6) brightness(.97)' : '';
+        const tag = els[i].querySelector('.tag'); if (tag) tag.style.top = (els[i].querySelector('.card').offsetHeight - 18) + 'px', tag.style.transform = `translate(-50%,0) scale(${(1 / s).toFixed(3)})`;
+      }
+      if (bi !== focusIdx) { if (els[focusIdx]) els[focusIdx].classList.remove('focus'); els[bi] && els[bi].classList.add('focus'); focusIdx = bi; const x = items[bi]; if (x) count.textContent = `${String(bi + 1).padStart(2, '0')} / ${String(items.length).padStart(2, '0')} — ${brandKo(x.brand)} ${x.ko}`; }
+      railRAF = requestAnimationFrame(frame);
+    };
+    cancelAnimationFrame(railRAF); railRAF = requestAnimationFrame(frame);
+    let moved = 0;
+    zone.addEventListener('pointerdown', e => { dragging = true; moved = 0; lastX = e.clientX; target = null; zone.classList.add('drag'); zone.setPointerCapture(e.pointerId); });
+    zone.addEventListener('pointermove', e => { if (!dragging) return; const dx = e.clientX - lastX; lastX = e.clientX; moved += Math.abs(dx); offset += dx; vel = dx; });
+    const end = (e) => {
+      if (!dragging) return; dragging = false; zone.classList.remove('drag');
+      if (moved < 6) { // click
+        const h = document.elementFromPoint(e.clientX, e.clientY)?.closest('.hang');
+        if (h) { const i = +h.dataset.i; if (i === focusIdx) { location.hash = '#/market/' + items[i].mid; } else { const W = zone.clientWidth; const cur = ((i * SP + offset) % (items.length * SP) + items.length * SP) % (items.length * SP); let xNow = cur > items.length * SP - SP * 1.5 ? cur - items.length * SP : cur; target = offset + (W / 2 - (xNow + h.offsetWidth / 2)); } }
+      }
+    };
+    zone.addEventListener('pointerup', end); zone.addEventListener('pointercancel', end);
+    zone.addEventListener('wheel', e => { const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : 0; if (d) { e.preventDefault(); offset -= d; vel = -d * .3; target = null; } }, { passive: false });
+    $$('#pills button').forEach(b => b.onclick = () => { $$('#pills button').forEach(x => x.classList.toggle('on', x === b)); build(b.dataset.b); });
+  }
+
+  function initTunnel(n) {
+    const cards = $$('#ttrack .tcard'); let cur = 0;
+    const paint = () => cards.forEach((c, i) => {
+      let d = i - cur; if (d > n / 2) d -= n; if (d < -n / 2) d += n;
+      const ad = Math.abs(d);
+      c.style.transform = `translateX(${d * (innerWidth < 760 ? 170 : 250)}px) translateZ(${-ad * 160}px) rotateY(${d * -28}deg)`;
+      c.style.opacity = ad > 3 ? 0 : 1 - ad * 0.18; c.style.zIndex = String(50 - ad); c.style.pointerEvents = ad > 3 ? 'none' : '';
+      c.classList.toggle('c', d === 0);
+    });
+    const go = (k) => { cur = (cur + k + n) % n; paint(); };
+    cards.forEach((c, i) => c.addEventListener('click', e => { if (!c.classList.contains('c')) { e.preventDefault(); let d = i - cur; if (d > n / 2) d -= n; if (d < -n / 2) d += n; go(d); restart(); } }));
+    $('#tPrev').onclick = () => { go(-1); restart(); }; $('#tNext').onclick = () => { go(1); restart(); };
+    let sx = null; const tn = $('#tunnel');
+    tn.addEventListener('pointerdown', e => sx = e.clientX); tn.addEventListener('pointerup', e => { if (sx != null && Math.abs(e.clientX - sx) > 40) { go(e.clientX < sx ? 1 : -1); restart(); } sx = null; });
+    const restart = () => { clearInterval(tunnelTimer); tunnelTimer = setInterval(() => { if (!document.body.contains(tn)) return clearInterval(tunnelTimer); go(1); }, 3800); };
+    paint(); restart();
+  }
+
+  function initStory() {
+    const ws = $$('#storyBig .w'); const sec = $('#story');
+    const onScroll = () => { if (!document.body.contains(sec)) return window.removeEventListener('scroll', onScroll); const r = sec.getBoundingClientRect(); const p = Math.min(1, Math.max(0, (innerHeight * 0.85 - r.top) / (r.height * 0.55))); const lit = Math.round(p * ws.length); ws.forEach((w, i) => w.classList.toggle('lit', i < lit)); };
+    window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  }
+
+  function typePlaceholder(input, list) {
+    let li = 0, ci = 0, del = false;
+    const tick = () => { if (!document.body.contains(input)) return; const s = list[li]; if (!del) { ci++; if (ci > s.length) { del = true; return setTimeout(tick, 1400); } } else { ci--; if (ci === 0) { del = false; li = (li + 1) % list.length; } } input.placeholder = s.slice(0, ci) + (input.value ? '' : '▍'); setTimeout(tick, del ? 35 : 85); };
+    tick();
+  }
+
+  function countUp(el) { const t = +el.dataset.count; const st = performance.now(); const f = (now) => { const p = Math.min(1, (now - st) / 1400); el.textContent = Math.round(t * (1 - Math.pow(1 - p, 3))).toLocaleString(); if (p < 1) requestAnimationFrame(f); }; requestAnimationFrame(f); }
+
+  // reveal-on-scroll for every route
+  let io = null;
+  function reveal() {
+    if (io) io.disconnect();
+    io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); $$('[data-count]', e.target).forEach(countUp); io.unobserve(e.target); } }), { threshold: 0.12 });
+    $$('.rv').forEach(el => io.observe(el));
+    $$('.pgrid > *, .sgrid > *, .mgrid > *, .rlist > a, .steps > div, .tags > *').forEach((el, i) => { if (!el.classList.contains('rv')) { el.classList.add('rv'); el.style.transitionDelay = (i % 4) * 0.06 + 's'; io.observe(el); } });
+  }
+
+  // command palette (search)
+  function palette() {
+    const ov = document.createElement('div'); ov.className = 'pal-ov';
+    ov.innerHTML = `<div class="pal" role="dialog" aria-label="검색"><input placeholder="브랜드, 모델, 레퍼런스…" autocomplete="off"><div class="res"></div></div>`;
+    document.body.appendChild(ov);
+    const inp = $('input', ov), res = $('.res', ov); let items = [], fi = 0;
+    const close = () => ov.remove();
+    ov.onmousedown = e => { if (e.target === ov) close(); };
+    const run = () => { const q = inp.value.trim(); items = q ? matchModels(q).slice(0, 12) : []; fi = 0;
+      res.innerHTML = q ? (items.length ? items.map((x, i) => `<a class="it ${i === 0 ? 'f' : ''}" href="#/market/${x.mid}"><div class="th">${watchImg(x)}</div><div><b>${esc(x.ko)}</b><small>${esc(brandKo(x.brand))} · ${esc(x.ref)}</small></div><span class="pr">₩${won(x.krw)}</span></a>`).join('') + `<a class="it" href="#/supersearch?q=${encodeURIComponent(q)}"><div><b>‘${esc(q)}’ 슈퍼검색으로 전체 플랫폼 보기 →</b></div></a>` : `<div class="hint">결과가 없어요. 슈퍼검색에서 다시 찾아볼까요? <a href="#/supersearch?q=${encodeURIComponent(q)}" style="text-decoration:underline">이동</a></div>`) : '<div class="hint">예: 데이토나, 126610, 노틸러스, 산토스</div>';
+      $$('a', res).forEach(a => a.addEventListener('click', close)); };
+    inp.oninput = run;
+    inp.onkeydown = e => { const as = $$('.it', res); if (e.key === 'Escape') close(); else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); fi = Math.max(0, Math.min(as.length - 1, fi + (e.key === 'ArrowDown' ? 1 : -1))); as.forEach((a, i) => a.classList.toggle('f', i === fi)); } else if (e.key === 'Enter') { const a = as[fi]; if (a) { location.hash = a.getAttribute('href'); close(); } else if (inp.value.trim()) { location.hash = '#/supersearch?q=' + encodeURIComponent(inp.value.trim()); close(); } } };
+    run(); inp.focus();
+  }
+  $('#cmdk').onclick = palette;
+  document.addEventListener('keydown', e => { if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !$('.pal-ov')) { e.preventDefault(); palette(); } });
+
+  // dock indicator + cursor spotlight + fav count
+  function paintDock(key) {
+    const a = $(`#dock a[data-k="${key}"]`) || $('#dock a[data-k="home"]');
+    $$('#dock a').forEach(x => x.classList.toggle('on', x === a));
+    const ind = $('#dockInd'); ind.style.left = a.offsetLeft + 'px'; ind.style.width = a.offsetWidth + 'px';
+    const n = fav.get().length; $('#favN').textContent = n ? n : '';
+  }
+  const spot = $('#spot');
+  window.addEventListener('pointermove', e => { spot.style.left = e.clientX + 'px'; spot.style.top = e.clientY + 'px'; }, { passive: true });
+
   function magCard(a) { const m = modelByRef(a.model); return `<a class="mcard" href="#/magazine/${a.id}"><div class="cv" style="background:linear-gradient(135deg,#f3f4f6,#e5e7eb)">${m ? `<div style="position:absolute;inset:0">${watchImg(m)}</div>` : ''}</div><div class="cat">${esc(a.cat)}</div><h3>${esc(a.title)}</h3><p>${esc(a.lead)}</p><span class="rm">더보기 ${svg(IC.arrow, 'sm')}</span></a>`; }
 
   // ---------- super search ----------
@@ -307,7 +449,7 @@
 
   // ---------- misc ----------
   let tt; function toast(t) { $$('.toast').forEach(x => x.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); clearTimeout(tt); tt = setTimeout(() => el.remove(), 2400); }
-  $('#coBtn').onclick = () => $('#coBody').classList.toggle('open');
+  window.addEventListener('resize', () => paintDock((parse().path.split('/')[1]) || 'home'));
   $('#yr').textContent = new Date().getFullYear();
   route();
 })();

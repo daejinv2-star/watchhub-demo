@@ -9,8 +9,9 @@
   --default: oklch(94% .001 286.375);
   --border: oklch(90% .004 286.32);
   --separator: oklch(92% .004 286.32);
-  --accent: oklch(62.04% .195 253.83);
-  --accent-soft: oklch(62.04% .195 253.83 / .12);
+  --accent: #4d7c0f;
+  --accent-soft: rgba(77,124,15,.12);
+  --accent-fg: #fff;
   --success: oklch(62% .19 150.81);
   --success-soft: oklch(73.29% .1935 150.81 / .16);
   --warning: oklch(78.19% .1585 72.33);
@@ -324,3 +325,89 @@ main.page { padding: 16px 24px 48px; max-width: 1400px; width: 100%; }
   .tbl-head, .row { grid-template-columns: 1fr 130px 70px; }
   .field { grid-template-columns: 1fr; }
 }
+
+/* =====================================================================
+   Watch HUB Pro — "Terminal" identity (default dark, lime accent)
+   ===================================================================== */
+.dark {
+  --background: #08090a; --foreground: #ececea; --muted: #85878d; --surface: #111214; --surface-2: #17181b; --surface-3: #1f2024;
+  --default: #1f2024; --border: #24262a; --separator: #1d1f22;
+  --accent: #c6f432; --accent-soft: rgba(198,244,50,.12); --accent-fg: #0a0b0c;
+  --success: #46e08a; --success-soft: rgba(70,224,138,.14); --danger: #ff5d4f;
+  --shadow-card: none; --shadow-float: 0 20px 60px -20px rgba(0,0,0,.9), 0 0 0 1px #26282c;
+}
+:root { --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; --sidebar-w: 76px; }
+.tabnum, .mcard .p, .mover .price, .hero-head .price, .price-cell b, .kv .v, .chg, .tick b, .tick i, .pulse b, .usage b { font-family: var(--mono); letter-spacing: -.03em; }
+body { background: var(--background); }
+.dark body::before { content: ''; position: fixed; inset: 0; pointer-events: none; background: radial-gradient(900px 500px at 85% -10%, rgba(198,244,50,.06), transparent 60%), radial-gradient(700px 400px at 0% 110%, rgba(70,120,255,.05), transparent 60%); z-index: 0; }
+.shell { position: relative; z-index: 1; }
+/* slim icon rail */
+.sidebar { padding: 14px 10px; align-items: center; box-shadow: inset -1px 0 0 var(--border) !important; }
+.logo { width: 44px; height: 44px; padding: 0; justify-content: center; border-radius: 14px; background: var(--accent); color: var(--accent-fg); font-size: 15px; font-style: normal; letter-spacing: -.5px; margin-bottom: 18px; overflow: hidden; }
+.logo .full { display: none; } .logo .pro { display: none; }
+.nav { align-items: center; gap: 6px; }
+.nav a { position: relative; width: 48px; height: 48px; padding: 0; justify-content: center; border-radius: 14px; font-size: 0; gap: 0; color: var(--muted); }
+.nav a .i { width: 21px; height: 21px; color: inherit; }
+.nav a.active { background: var(--surface-3); color: var(--foreground); }
+.nav a.active::before { content: ''; position: absolute; left: -10px; top: 14px; bottom: 14px; width: 3px; border-radius: 3px; background: var(--accent); }
+.nav a:hover::after { content: attr(data-label); position: absolute; left: 58px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 12.5px; font-weight: 600; background: var(--foreground); color: var(--background); padding: 5px 9px; border-radius: 8px; z-index: 90; }
+.badge-beta { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; padding: 0; border-radius: 50%; background: var(--accent) !important; font-size: 0; margin: 0; }
+.help { width: 48px; height: 48px; justify-content: center; font-size: 0; gap: 0; padding: 0; border-radius: 14px; color: var(--muted); }
+/* ticker */
+.ticker { position: sticky; top: 48px; z-index: 19; height: 34px; overflow: hidden; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--background) 90%, transparent); backdrop-filter: blur(10px); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.ticker-in { display: flex; width: max-content; animation: tick 70s linear infinite; }
+.ticker:hover .ticker-in { animation-play-state: paused; }
+@keyframes tick { to { transform: translateX(-50%); } }
+.tick { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 18px; font-size: 12px; color: var(--muted); border-right: 1px solid var(--separator); white-space: nowrap; }
+.tick b { color: var(--foreground); font-weight: 600; font-size: 12px; } .tick i { font-style: normal; font-size: 11.5px; }
+.tick .u { color: var(--success); } .tick .d { color: var(--danger); }
+.topbar { background: color-mix(in oklab, var(--background) 88%, transparent); }
+.topbar h1 { font-size: 15px; letter-spacing: -.01em; }
+.search-btn { background: var(--surface-2); border: 1px solid var(--border); }
+/* cards */
+.card, .mcard, .tbl, .panel, .chip-btn { box-shadow: none; border: 1px solid var(--border); }
+.card { border-radius: 20px; background: linear-gradient(180deg, var(--surface), color-mix(in oklab, var(--surface) 92%, var(--background))); }
+.btn-primary { background: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.btn-success { background: var(--accent); color: var(--accent-fg); font-weight: 700; }
+.btn-outline { background: transparent; }
+.chip-btn { background: var(--surface); }
+.chip-btn.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.section-title { font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; font-size: 11.5px; }
+/* pulse tiles (overview) */
+.pulse { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-top: 8px; }
+.pulse > div { padding: 16px 18px; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); position: relative; overflow: hidden; }
+.pulse small { display: block; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.pulse b { display: block; font-size: 26px; font-weight: 600; margin-top: 8px; }
+.pulse em { font-style: normal; font-size: 12px; }
+.pulse svg { position: absolute; right: 12px; bottom: 12px; width: 90px; height: 30px; }
+/* vertical model cards */
+.model-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important; gap: 14px; }
+.mcard { flex-direction: column; gap: 0; padding: 0; min-height: 0; border-radius: 20px; overflow: hidden; background: var(--surface); transition: border-color .2s, transform .25s; }
+.mcard:hover { transform: translateY(-3px); border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); box-shadow: none; }
+.mcard .img { width: 100%; height: auto; aspect-ratio: 4/3; border-radius: 0; }
+.mcard .img .watch-img { transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+.mcard:hover .img .watch-img { transform: scale(1.05); }
+.mcard .body { padding: 14px 16px 16px; }
+.mcard .t { font-size: 14.5px; padding-right: 0; }
+.mcard .s { font-family: var(--mono); font-size: 11px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mcard .prow { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.mcard .p { margin-top: 0; font-size: 19px; font-weight: 600; }
+.mcard .spark { width: 84px; height: 28px; flex: none; }
+.mcard .r { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.prem { font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 7px; background: var(--success-soft); color: var(--success); }
+.prem.neg { background: rgba(255,93,79,.12); color: var(--danger); }
+.mcard .wanted { position: static; font-family: var(--mono); font-size: 11px; }
+.star-btn { top: 10px; right: 10px; background: rgba(8,9,10,.55); backdrop-filter: blur(6px); color: #ddd; }
+.light .star-btn { background: rgba(255,255,255,.75); color: #333; }
+/* misc */
+.tbl { background: var(--surface-2); }
+.row.sel { background: color-mix(in oklab, var(--accent) 9%, var(--surface)); box-shadow: inset 3px 0 0 var(--accent); }
+.seg button.on { background: var(--accent); color: var(--accent-fg); }
+.seg-mini button.on { color: var(--accent); }
+.meter > i { background: var(--accent); }
+.cond { background: var(--accent-soft); color: var(--accent); }
+.light .cond { color: #3f6212; }
+.dot { background: var(--success); }
+.coach { border: 1px solid var(--border); }
+.coach::before { border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+@media (max-width: 860px) { .pulse { grid-template-columns: 1fr 1fr; } .ticker { top: 48px; } }

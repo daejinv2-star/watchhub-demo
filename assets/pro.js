@@ -42,7 +42,7 @@
     currency: store.get('currency', 'HKD'), retailRegion: store.get('retailRegion', 'HK'), lang: store.get('lang', 'KO'),
     favorites: store.get('favorites', []), connected: store.get('connected', []), myReviews: store.get('myReviews', {}),
     wa: store.get('wa', false), history: store.get('history', []), tourDone: store.get('tourDone', false),
-    theme: store.get('theme', 'light'), name: store.get('name', 'Ruby Tern'), storeFlag: store.get('storeFlag', false), countries: store.get('countries', []),
+    theme: store.get('theme', 'dark'), name: store.get('name', 'Ruby Tern'), storeFlag: store.get('storeFlag', false), countries: store.get('countries', []),
     notifRead: store.get('notifRead', false), usage: store.get('usage', { date: kstDate(), connects: 0, sends: 0 })
   };
   if (S.usage.date !== kstDate()) S.usage = { date: kstDate(), connects: 0, sends: 0 };
@@ -68,7 +68,7 @@
   function renderNav(path) {
     $('#nav').innerHTML = NAV.map(n => {
       const active = n.path === '/app' ? path === '/app' : path.startsWith(n.path);
-      return `<a role="treeitem" href="#${n.path}" class="${active ? 'active' : ''}" data-nav="${n.path}">${ic(n.icon)}${n.label}${n.beta ? '<span class="badge-beta">Beta</span>' : ''}</a>`;
+      return `<a role="treeitem" href="#${n.path}" class="${active ? 'active' : ''}" data-nav="${n.path}" data-label="${n.label}" aria-label="${n.label}">${ic(n.icon)}${n.label}${n.beta ? '<span class="badge-beta">Beta</span>' : ''}</a>`;
     }).join('');
   }
 
@@ -109,18 +109,23 @@
     S.favorites = isFav(id) ? S.favorites.filter(x => x !== id) : [id, ...S.favorites]; save('favorites');
     toast(isFav(id) ? '컬렉션에 추가했어요' : '컬렉션에서 뺐어요');
   }
+  function spark(m, n, cls) {
+    const pts = m.hist.slice(-(n || 30)); const min = Math.min(...pts), max = Math.max(...pts), sp = (max - min) || 1;
+    const W = 84, H = 28; const d = pts.map((v, i) => `${i ? 'L' : 'M'}${(i * W / (pts.length - 1)).toFixed(1)},${(H - 2 - (v - min) / sp * (H - 4)).toFixed(1)}`).join(' ');
+    const up = pts[pts.length - 1] >= pts[0];
+    return `<svg class="${cls || 'spark'}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"><path d="${d}" fill="none" style="stroke:${up ? 'var(--success)' : 'var(--danger)'}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  }
   function modelCard(m) {
     const prem = premiumOf(m);
     return `<a class="mcard" href="#/app/explore/${m.id}" data-id="${m.id}">
-      <button class="star-btn ${isFav(m.id) ? 'on' : ''}" data-fav="${m.id}" aria-label="컬렉션에 추가">${ic('star')}</button>
       <div class="img">${watchImg(m, { crop: true })}</div>
+      <button class="star-btn ${isFav(m.id) ? 'on' : ''}" data-fav="${m.id}" aria-label="컬렉션에 추가">${ic('star')}</button>
       <div class="body">
         <div class="t">${esc(m.name)}</div>
-        <div class="s">${esc(m.ref)} · ${esc(m.specs)}${m.discontinued ? '<span class="tag-disc">#단종</span>' : ''}</div>
-        <div class="p tabnum">${money(m.price)}</div>
-        <div class="r">${prem == null ? '리테일가 미확인' : `리테일가 대비 <span class="${prem >= 0 ? 'up' : 'down'}">${fmtPct(prem)}</span>`}</div>
+        <div class="s">${esc(m.ref)} · ${esc(m.specs)}${m.discontinued ? ' · 단종' : ''}</div>
+        <div class="prow"><div class="p">${money(m.price)}</div>${spark(m)}</div>
+        <div class="r">${prem == null ? '<span class="prem neg">리테일 미확인</span>' : `<span class="prem ${prem < 0 ? 'neg' : ''}">리테일 ${fmtPct(prem)}</span>`}${m.counts.wanted ? `<span class="wanted">구함 ${m.counts.wanted}</span>` : ''}</div>
       </div>
-      ${m.counts.wanted ? `<span class="wanted">구함 ${m.counts.wanted}</span>` : ''}
     </a>`;
   }
   document.addEventListener('click', (e) => {
@@ -132,7 +137,14 @@
   function pageOverview(main) {
     const favs = S.favorites.map(id => modelById[id]).filter(Boolean);
     const movers = [...MODELS].sort((a, b) => Math.abs(b.dayChange) - Math.abs(a.dayChange)).slice(0, 5);
+    const avgChg = MODELS.reduce((a, m) => a + m.dayChange, 0) / MODELS.length; const newL = MODELS.reduce((a, m) => a + Math.round(m.counts.new / 14), 0); const wantedT = MODELS.reduce((a, m) => a + m.counts.wanted, 0); const idx = MODELS.slice(0, 30); const idxHist = { hist: idx[0].hist.map((_, i) => idx.reduce((a, m) => a + m.hist[i] / m.price, 0)) };
     main.innerHTML = `
+      <section><div class="section-title">Market pulse · 오늘</div><div class="pulse">
+        <div><small>Watch HUB 지수</small><b>${(idxHist.hist[399] / idxHist.hist[0] * 1000).toFixed(1)}</b><em class="${idxHist.hist[399] >= idxHist.hist[398] ? 'up' : 'down'}">${fmtPct((idxHist.hist[399] / idxHist.hist[398] - 1) * 100, { dp: 2 })}</em>${spark(idxHist, 60, 'x')}</div>
+        <div><small>평균 일간 변동</small><b class="${avgChg >= 0 ? 'up' : 'down'}">${fmtPct(avgChg, { dp: 2 })}</b><em style="color:var(--muted)">${MODELS.length}개 모델</em></div>
+        <div><small>오늘 신규 매물</small><b>${newL.toLocaleString()}</b><em style="color:var(--muted)">딜러 ${DEALERS.length}명</em></div>
+        <div><small>구함(Wanted)</small><b>${wantedT.toLocaleString()}</b><em style="color:var(--muted)">수요 신호</em></div>
+      </div></section>
       <section><div class="section-title">내 컬렉션</div>
         ${favs.length ? `<div class="card"><div class="collection-grid">${favs.map(m => `
           <a class="mover" href="#/app/explore/${m.id}" style="border:0;padding:8px">${thumb(m)}
@@ -307,9 +319,9 @@
     let d = `M${P[0][0]},${P[0][1]}`;
     for (let i = 0; i < P.length - 1; i++) { const p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || p2; const t = 0.18; d += ` C${p1[0] + (p2[0] - p0[0]) * t},${p1[1] + (p2[1] - p0[1]) * t} ${p2[0] - (p3[0] - p1[0]) * t},${p2[1] - (p3[1] - p1[1]) * t} ${p2[0]},${p2[1]}`; }
     const area = d + ` L${P[P.length - 1][0]},${h} L${P[0][0]},${h} Z`;
-    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="oklch(62.04% .195 253.83)" stop-opacity=".28"/><stop offset="1" stop-color="oklch(62.04% .195 253.83)" stop-opacity="0"/></linearGradient></defs>
-      <path d="${area}" fill="url(#ag)"/><path d="${d}" fill="none" stroke="oklch(62.04% .195 253.83)" stroke-width="2" stroke-linejoin="round"/>
-      <line id="cx" y1="0" y2="${h}" stroke="var(--border)" stroke-dasharray="3 3" opacity="0"/><circle id="cd" r="4.5" fill="#fff" stroke="oklch(62.04% .195 253.83)" stroke-width="2" opacity="0"/></svg><div class="tip" id="ctip"></div>`;
+    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1"><stop offset="0" style="stop-color:var(--accent)" stop-opacity=".30"/><stop offset="1" style="stop-color:var(--accent)" stop-opacity="0"/></linearGradient></defs>
+      <path d="${area}" fill="url(#ag)"/><path d="${d}" fill="none" style="stroke:var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+      <line id="cx" y1="0" y2="${h}" stroke="var(--border)" stroke-dasharray="3 3" opacity="0"/><circle id="cd" r="4.5" style="fill:var(--background);stroke:var(--accent)" stroke-width="2" opacity="0"/></svg><div class="tip" id="ctip"></div>`;
     const svg = $('svg', el), cxl = $('#cx', el), cd = $('#cd', el), tip = $('#ctip', el);
     const today = new Date();
     svg.onmousemove = (e) => {
@@ -598,6 +610,7 @@
   function toast(t) { $$('.toast').forEach(x => x.remove()); const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; document.body.appendChild(el); clearTimeout(toastT); toastT = setTimeout(() => el.remove(), 2400); }
 
   // ---------- boot ----------
+  (function ticker() { const arr = [...MODELS].sort((a, b) => Math.abs(b.dayChange) - Math.abs(a.dayChange)).slice(0, 24); const one = arr.map(m => `<a class="tick" href="#/app/explore/${m.id}">${esc(m.family)} <span>${esc(m.ref.split(/[.-]/)[0])}</span><b>${money(m.price)}</b><i class="${m.dayChange >= 0 ? 'u' : 'd'}">${m.dayChange >= 0 ? '▲' : '▼'} ${fmtPct(Math.abs(m.dayChange))}</i></a>`).join(''); $('#ticker').innerHTML = `<div class="ticker-in">${one}${one}</div>`; })();
   paintUser(); paintNotifDot();
   if (!location.hash) location.hash = '#/app';
   route();

@@ -1,20 +1,21 @@
 <!doctype html>
-<html lang="ko" class="light">
+<html lang="ko" class="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Watch HUB Pro — 시계 딜러 마켓 실시간 시세</title>
 <meta name="description" content="시계 딜러 마켓의 실시간 가격 장부 — 실거래 시세, 검증된 딜러, 원탭 WhatsApp Broadcast.">
-<meta name="theme-color" content="#f4f4f4">
+<meta name="theme-color" content="#08090a">
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/inter@5/index.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="assets/pro.css">
 </head>
 <body>
 <div class="shell" id="shell">
   <aside class="sidebar" aria-label="사이드바">
-    <a class="logo" href="#/app">WATCH HUB <span class="pro">Pro</span></a>
+    <a class="logo" href="#/app" title="Watch HUB Pro">WH</a>
     <nav class="nav" id="nav" role="tree"></nav>
     <div class="grow"></div>
     <button class="help" id="helpBtn"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14"/><path d="M12 17h.01"/></svg>도움말 / 지원</button>
@@ -28,6 +29,7 @@
       <button class="icon-btn" id="notifBtn" aria-label="알림"><svg class="i" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span class="notif-dot" id="notifDot">2</span></button>
       <button class="avatar" id="userBtn" aria-label="사용자 메뉴">RT</button>
     </header>
+    <div class="ticker" id="ticker" aria-label="급변동 시세 티커"></div>
     <main class="page" id="main"></main>
   </div>
 </div>

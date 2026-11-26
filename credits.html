@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사진 출처 · Watch HUB</title>
+<style>
+  body { font-family: Inter, "Pretendard", "Malgun Gothic", sans-serif; margin: 0; color: #191c20; background: #f7f8fa; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 40px 24px 60px; }
+  h1 { font-size: 28px; margin: 0 0 8px; } p { color: #697078; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
+  .it { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .it img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .it div { padding: 10px 12px; font-size: 12.5px; line-height: 1.5; }
+  .it b { display: block; font-size: 13px; word-break: break-all; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html">← Watch HUB</a>
+  <h1>사진 출처</h1>
+  <p>이 데모에 쓰인 시계 사진은 Wikimedia Commons와 Flickr(Openverse 검색)의 자유 라이선스(CC BY, CC BY-SA, CC BY-ND, CC0, 퍼블릭 도메인) 이미지입니다. 웹 표시용으로 크기만 줄였습니다. 각 사진의 저작권은 아래 저작자에게 있습니다. 사진 속 브랜드와 상표는 각 소유자의 것이며 이 데모와 관계가 없습니다.</p>
+  <div class="grid" id="g"></div>
+</div>
+<script src="assets/photos.js"></script>
+<script>
+  const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  document.getElementById('g').innerHTML = WH_PHOTOS.credits.map(c => `<div class="it"><img src="assets/img/${c.key}.jpg" alt="" loading="lazy"><div><b>${esc(c.title)}</b>저작자: ${esc(c.author)}<br>라이선스: ${esc(c.license)}<br><a href="${esc(c.page)}" target="_blank" rel="noopener">원본 보기</a></div></div>`).join('');
+</script>
+</body>
+</html>
